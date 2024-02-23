@@ -68,8 +68,15 @@ class Pessoa(BaseModel):
     role: str
 
 
+class Admin(BaseModel):
+    name: str
+    age: int
+    role: str
+
+
 # Criação das Rotas:
 
+# Rotas de Pessoas:
 # Rota Get:
 @app.get("/pessoas")
 async def get_pessoas():
@@ -103,3 +110,25 @@ async def create_pessoa(pessoa: Pessoa):
     nova_pessoa = {"name": pessoa.name, "age": pessoa.age, "role": pessoa.role}
     await db.people.insert_one(nova_pessoa)
     return {"message": "Pessoa criada com sucesso!"}
+
+
+# Rotas de Admin:
+# Rota Get:
+@app.get("/admin")
+async def get_admin():
+    admins = await db.admins.find().to_list(length=None)
+
+    for admin in admins:
+        admin["_id"] = str(admin["_id"])
+
+    return admins
+
+
+# Rota Post:
+@app.post("/admin/create")
+async def create_admin(admin: Admin):
+    novo_admin = {"name": admin.name, "age": admin.age, "role": admin.role}
+
+    await db.admins.insert_one(novo_admin)
+
+    return {"message": "Admin criado com sucesso!"}
