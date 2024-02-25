@@ -78,6 +78,22 @@ class Admin(BaseModel):
     age: int
 
 
+class UpdatePessoa(BaseModel):
+    name: str = None
+    first_name: str = None
+    last_name: str = None
+    email: str = None
+    age: int = None
+
+
+class UpdateAdmin(BaseModel):
+    name: str = None
+    first_name: str = None
+    last_name: str = None
+    email: str = None
+    age: int = None
+
+
 # Criação das Rotas:
 
 # Rotas de Pessoas:
@@ -102,6 +118,7 @@ async def get_pessoas():
     return pessoas
 
 
+# Pegando Pessoa Especifica
 @app.get("/pessoas/{cpf}")
 async def get_pessoa_by_cpf(cpf: str):
     pessoa = await db.people.find_one({"cpf": cpf})
@@ -113,7 +130,7 @@ async def get_pessoa_by_cpf(cpf: str):
         return {"message": "Pessoa não encontrada!"}
 
 
-# Rota Post:
+# ROTA POST:
 @app.post("/pessoas/create")
 async def create_pessoa(pessoa: Pessoa):
     # if pessoa.nome == "":
@@ -130,6 +147,23 @@ async def create_pessoa(pessoa: Pessoa):
     return {"message": "Pessoa criada com sucesso!"}
 
 
+# ROTA PATCH:
+@app.patch("/pessoas/{cpf}")
+async def update_pessoa(cpf: str, update_infos: UpdatePessoa):
+    update_infos = update_infos.dict(exclude_unset=True)
+
+    request = await db.people.update_one({"cpf": cpf}, {"$set": update_infos})
+
+    # Verifica se exatamente um documento foi modificado durante a operação de atualização: (Usamos o update_one)
+    if request.modified_count == 1:
+        if len(update_infos) == 1:
+            return {f"message": f"O campo {list(update_infos.keys())[0]} foi alterado com sucesso!"}
+        else:
+            return {f"message": f"Os campos | {' | '.join(list(update_infos.keys()))} | foram alterados com sucesso!"}
+    else:
+        return {"message": "Falha ao atualizar pessoa!"}
+
+
 # Rotas de Admin:
 # ROTAS GET:
 @app.get("/admin")
@@ -142,6 +176,7 @@ async def get_admin():
     return admins
 
 
+# Pegando Admin Especifico
 @app.get("/admin/{cpf}")
 async def get_pessoa_by_cpf(cpf: str):
     admin = await db.admins.find_one({"cpf": cpf})
@@ -153,7 +188,7 @@ async def get_pessoa_by_cpf(cpf: str):
         return {"message": "Admin não encontrado!"}
 
 
-# Rota Post:
+# ROTA POST:
 @app.post("/admin/create")
 async def create_admin(admin: Admin):
     novo_admin = {"cpf": admin.cpf, "name": admin.name, "first_name": admin.first_name, "last_name": admin.last_name,
@@ -162,3 +197,19 @@ async def create_admin(admin: Admin):
     await db.admins.insert_one(novo_admin)
 
     return {"message": "Admin criado com sucesso!"}
+
+
+# ROTA PATCH:
+@app.patch("/admin/{cpf}")
+async def update_admin(cpf: str, update_infos: UpdateAdmin):
+    update_infos = update_infos.dict(exclude_unset=True)
+
+    request = await db.admins.update_one({"cpf": cpf}, {"$set": update_infos})
+
+    if request.modified_count == 1:
+        if len(update_infos) == 1:
+            return {"message": f"O campo {list(update_infos.keys())[0]} foi alterado com sucesso!"}
+        else:
+            return {"message": f"Os campos | {' | '.join(list(update_infos.keys()))} | foram alterados com suscesso!"}
+    else:
+        return {"message":  "Falha ao atualizar admin!"}
