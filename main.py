@@ -139,12 +139,19 @@ async def create_pessoa(pessoa: Pessoa):
     # nova_pessoa = {"id": len(pessoas) + 1, "nome": pessoa.nome, "idade": pessoa.idade, "role": pessoa.role}
     # pessoas.append(nova_pessoa)
 
-    nova_pessoa = {"cpf": pessoa.cpf, "name": pessoa.name, "first_name": pessoa.first_name,
-                   "last_name": pessoa.last_name, "email": pessoa.email, "age": pessoa.age,
-                   "status": "active", "role": "user"}
-    await db.people.insert_one(nova_pessoa)
+    existe = await procura_cpf(pessoa.cpf, "user")
 
-    return {"message": "Pessoa criada com sucesso!"}
+    if not existe:
+        nova_pessoa = {"cpf": pessoa.cpf, "name": pessoa.name, "first_name": pessoa.first_name,
+                       "last_name": pessoa.last_name, "email": pessoa.email, "age": pessoa.age,
+                       "status": "active", "role": "user"}
+        await db.people.insert_one(nova_pessoa)
+
+        return {"message": "Pessoa criada com sucesso!"}
+    elif existe is None:
+        return {"message": "Erro interno."}
+    else:
+        return {"message": "Usuário já cadastrado!"}
 
 
 # ROTA PATCH:
@@ -202,12 +209,19 @@ async def get_pessoa_by_cpf(cpf: str):
 # ROTA POST:
 @app.post("/admin/create")
 async def create_admin(admin: Admin):
-    novo_admin = {"cpf": admin.cpf, "name": admin.name, "first_name": admin.first_name, "last_name": admin.last_name,
-                  "email": admin.email, "age": admin.age, "status": "active", "role": "admin"}
+    existe = await procura_cpf(admin.cpf, "admin")
 
-    await db.admins.insert_one(novo_admin)
+    if not existe:
+        novo_admin = {"cpf": admin.cpf, "name": admin.name, "first_name": admin.first_name, "last_name": admin.last_name,
+                      "email": admin.email, "age": admin.age, "status": "active", "role": "admin"}
 
-    return {"message": "Admin criado com sucesso!"}
+        await db.admins.insert_one(novo_admin)
+
+        return {"message": "Admin criado com sucesso!"}
+    elif existe is None:
+        return {"message": "Erro interno."}
+    else:
+        return {"message": "Usuário já cadastrado!"}
 
 
 # ROTA PATCH:
@@ -235,3 +249,18 @@ async def delete_admin(cpf: str):
         return {"message": "Admin removido com sucesso!"}
     else:
         return {"message": "Erro ao remover admin!"}
+
+
+# VALIDAÇÕES:
+async def procura_cpf(cpf: str, collection: str) -> bool | None:
+    if collection == "user":
+        request = await db.people.find({"cpf": cpf}).to_list(length=None)
+    elif collection == "admin":
+        request = await db.admins.find({"cpf": cpf}).to_list(length=None)
+    else:
+        return None
+
+    if request.__len__() != 0:
+        return True  # -> Retorna True se existe.
+    else:
+        return False  # -> Retorna False se não existe.
