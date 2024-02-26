@@ -1,7 +1,7 @@
 """
 Dependências do Projeto:
 
-- pip install fastpi  -> Responsável pela Criação da API
+- pip install fastapi  -> Responsável pela Criação da API
 - pip install uvicorn -> Responsável pela Atualização da API sempre que o Código for Atualizado.
 
 - pip install motor   -> Responsável pela Comunicação com o Banco de Dados MongoDB de Forma Assíncrona.
@@ -164,6 +164,17 @@ async def update_pessoa(cpf: str, update_infos: UpdatePessoa):
         return {"message": "Falha ao atualizar pessoa!"}
 
 
+# ROTA DELETE:
+@app.delete("/pessoas/delete/{cpf}")
+async def delete_pessoa(cpf: str):
+    request = await db.people.delete_one({"cpf": cpf})
+
+    if request.deleted_count == 1:
+        return {"message": "Usuário removido com sucesso!"}
+    else:
+        return {"message": "Erro ao remover pessoa!"}
+
+
 # Rotas de Admin:
 # ROTAS GET:
 @app.get("/admin")
@@ -213,3 +224,14 @@ async def update_admin(cpf: str, update_infos: UpdateAdmin):
             return {"message": f"Os campos | {' | '.join(list(update_infos.keys()))} | foram alterados com suscesso!"}
     else:
         return {"message":  "Falha ao atualizar admin!"}
+
+
+# ROTA DELETE:
+@app.delete("/admin/delete/{cpf}")
+async def delete_admin(cpf: str):
+    request = await db.admins.delete_one({"cpf": cpf})
+
+    if request.deleted_count == 1:
+        return {"message": "Admin removido com sucesso!"}
+    else:
+        return {"message": "Erro ao remover admin!"}
