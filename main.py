@@ -163,16 +163,24 @@ async def create_user(user: User):
 async def update_user_by_cpf(cpf: str, update_infos: UpdateUser):
     update_infos = update_infos.dict(exclude_unset=True)
 
-    request = await db.users.update_one({"cpf": cpf}, {"$set": update_infos})
+    existe_email = False
 
-    # Verifica se exatamente um documento foi modificado durante a operação de atualização: (Usamos o update_one)
-    if request.modified_count == 1:
-        if len(update_infos) == 1:
-            return {f"message": f"O campo {list(update_infos.keys())[0]} foi alterado com sucesso!"}
+    if "email" in update_infos.keys():
+        existe_email = await procura_email(update_infos["email"], "user")
+
+    if not existe_email:
+        request = await db.users.update_one({"cpf": cpf}, {"$set": update_infos})
+
+        # Verifica se exatamente um documento foi modificado durante a operação de atualização: (Usamos o update_one)
+        if request.modified_count == 1:
+            if len(update_infos) == 1:
+                return {f"message": f"O campo {list(update_infos.keys())[0]} foi alterado com sucesso!"}
+            else:
+                return {f"message": f"Os campos | {' | '.join(list(update_infos.keys()))} | foram alterados com sucesso!"}
         else:
-            return {f"message": f"Os campos | {' | '.join(list(update_infos.keys()))} | foram alterados com sucesso!"}
+            return {"message": "Falha ao atualizar pessoa!"}
     else:
-        return {"message": "Falha ao atualizar pessoa!"}
+        return {"message": "E-mail já cadastrado!"}
 
 
 # ROTA DELETE:
@@ -238,15 +246,23 @@ async def create_admin(admin: Admin):
 async def update_admin_by_cpf(cpf: str, update_infos: UpdateAdmin):
     update_infos = update_infos.dict(exclude_unset=True)
 
-    request = await db.admins.update_one({"cpf": cpf}, {"$set": update_infos})
+    existe_email = False
 
-    if request.modified_count == 1:
-        if len(update_infos) == 1:
-            return {"message": f"O campo {list(update_infos.keys())[0]} foi alterado com sucesso!"}
+    if "email" in update_infos.keys():
+        existe_email = await procura_email(update_infos["email"], "admin")
+
+    if not existe_email:
+        request = await db.admins.update_one({"cpf": cpf}, {"$set": update_infos})
+
+        if request.modified_count == 1:
+            if len(update_infos) == 1:
+                return {"message": f"O campo {list(update_infos.keys())[0]} foi alterado com sucesso!"}
+            else:
+                return {"message": f"Os campos | {' | '.join(list(update_infos.keys()))} | foram alterados com suscesso!"}
         else:
-            return {"message": f"Os campos | {' | '.join(list(update_infos.keys()))} | foram alterados com suscesso!"}
+            return {"message": "Falha ao atualizar admin!"}
     else:
-        return {"message": "Falha ao atualizar admin!"}
+        return {"message": "E-mail já cadastrado!"}
 
 
 # ROTA DELETE:
@@ -263,7 +279,7 @@ async def delete_admin_by_cpf(cpf: str):
 # VALIDAÇÕES:
 async def procura_cpf(cpf: str, collection: str) -> bool | None:
     if collection == "user":
-        request = await db.user.find({"cpf": cpf}).to_list(length=None)
+        request = await db.users.find({"cpf": cpf}).to_list(length=None)
     elif collection == "admin":
         request = await db.admins.find({"cpf": cpf}).to_list(length=None)
     else:
@@ -277,7 +293,7 @@ async def procura_cpf(cpf: str, collection: str) -> bool | None:
 
 async def procura_email(email: str, collection: str) -> bool | None:
     if collection == "user":
-        request = await db.user.find({"email": email}).to_list(length=None)
+        request = await db.users.find({"email": email}).to_list(length=None)
     elif collection == "admin":
         request = await db.admins.find({"email": email}).to_list(length=None)
     else:
